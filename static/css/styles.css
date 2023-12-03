@@ -1,12 +1,13 @@
 /* Specify the font-face */
 @font-face {
     font-family: 'Apple II';
-    src: url('/static/fonts/appleii.ttf') format('ttf');
+    src: url('/static/fonts/appleii.ttf') format('truetype');
     /* You may need to provide other font formats for compatibility */
 }
 
 body {
     background-color: #000000;
     font-family: 'Apple II', sans-serif;
+    color: white;
 }
 
