@@ -1,7 +1,7 @@
 
 @font-face {
     font-family: 'Apple II';
-    src: url('/static/fonts/appleii.ttf') format('truetype');
+    src: url('/appleii.ttf') format('truetype');
 }
 
 body {
