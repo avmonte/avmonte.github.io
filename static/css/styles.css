@@ -1,14 +1,15 @@
 
 @font-face {
     font-family: 'Apple II';
-    src: url('../../appleii.ttf') format('truetype');
+    src: url('../fonts/appleii.ttf') format('truetype');
 }
 
 body {
     background-color: #000000;
-    font-family: 'Apple II', sans-serif;
-    color: green;
+    font-family: 'Apple II', sans-serif !important;
+    color: cyan;
 }
+
 :root {
     --myorange: #da7701;
 }
