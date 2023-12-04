@@ -1,13 +1,19 @@
 
 @font-face {
     font-family: 'Apple II';
-    src: url('../fonts/appleii.ttf') format('truetype');
+    /*src: url('../fonts/appleii.ttf') format('truetype');*/
+    /*src: url('../fonts/berkelium.ttf') format('truetype');*/
+    /*src: url('../fonts/s320.ttf') format('truetype');*/
+    /*src: url('../fonts/s320h.ttf') format('truetype');*/
+    /*src: url('../fonts/modeseven.ttf') format('truetype');*/
+    src: url('../fonts/x.ttf') format('truetype');
 }
 
 body {
     background-color: black;
     font-family: 'Apple II', sans-serif !important;
     color: var(--mycyan);
+    font-size: 20px;
 }
 
 p:hover {
@@ -46,7 +52,7 @@ a:visited {
 .accordion {
     background-color: black;
     font-family: 'Apple II', sans-serif !important;
-    font-size: 18px;
+    font-size: 22px;
     color: var(--mygreen);
     /*width:95%;*/
     border: none;
