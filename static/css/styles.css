@@ -5,13 +5,13 @@
 }
 
 body {
-    background-color: #000000;
+    background-color: black;
     font-family: 'Apple II', sans-serif !important;
-    color: cyan;
+    color: #08adad;
 }
 
 :root {
-    --myorange: #da7701;
+    --myorange: #c46b01;
 }
 
 a {
@@ -28,4 +28,28 @@ a:hover {
 a:visited {
     color: var(--myorange);
     text-decoration: none;
+}
+
+.accordion {
+    background-color: black;
+    font-family: 'Apple II', sans-serif !important;
+    font-size: 18px;
+    color: #1fa11f;
+    /*width:95%;*/
+    border: none;
+    text-align: left;
+    /*outline: none;*/
+
+    transition: 0.4s;
+}
+
+.accordion:hover {
+    background-color: lightgrey;
+    color: black;
+}
+
+.panel {
+    display: none;
+    background-color: black;
+    overflow: hidden;
 }

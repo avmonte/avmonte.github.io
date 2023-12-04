@@ -7,14 +7,13 @@
         <link rel="stylesheet" href="../static/css/styles.css">
     </head>
     <body>
-        <h3>
-            Data Log
-        </h3>
+        <br>
+
         <p>
             Name: Gevorg Nersesian
         </p>
         <p>
-            Nicknames: gev, gevo, avmonte, avmontt
+            Nicknames: gevo, avmonte, avmontt
         </p>
         <p>
             DoB: when uncle Bennu's guest left home -13 revolutions
@@ -22,26 +21,44 @@
         <p>
             Ethnicity: Armenian
         </p>
-        <br>
+        <br><br><br>
 
-        <h3>
-            Academics
-        </h3>
-        <p>
+        <button class="accordion">Academics</button>
+        <div class="panel">
+                  <p>
             Currently a CompSci student at <a href="https://aua.am/">American University of Armenia</a>.
         </p>
         <p>
             Fields of interest: cryptography, computer engineering, image processing
         </p>
-        <br>
+        </div>
 
-        <h3>
-            Personal Interests
-        </h3>
-        <p>
-            space exploration, music, filmmaking, hiking
-        </p>
-        <br>
+        <br><br><br>
+
+        <button class="accordion">Personal Interests</button>
+        <div class="panel">
+          <p>space exploration, music, filmmaking, hiking</p>
+        </div>
+
+        <script>
+            var acc = document.getElementsByClassName("accordion");
+            var i;
+
+            for (i = 0; i < acc.length; i++) {
+              acc[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var panel = this.nextElementSibling;
+                if (panel.style.display === "block") {
+                  panel.style.display = "none";
+                } else {
+                  panel.style.display = "block";
+                }
+              });
+            }
+
+        </script>
+
+        <br><br><br>
 
         <h3>
             Contact information
