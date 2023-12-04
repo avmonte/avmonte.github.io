@@ -7,11 +7,24 @@
 body {
     background-color: black;
     font-family: 'Apple II', sans-serif !important;
-    color: #08adad;
+    color: var(--mycyan);
+}
+
+p:hover {
+    background-color: #4b4b4b;
+    font-family: 'Apple II', sans-serif !important;
+    color: var(--mycyan);
+}
+
+#header {
+    text-align: center;
 }
 
 :root {
     --myorange: #c46b01;
+    --mycyan: #08adad;
+    --mygreen: #1fa11f;
+    --mydarkgrey: #4b4b4b;
 }
 
 a {
@@ -20,9 +33,9 @@ a {
 }
 
 a:hover {
-    background-color: lightgrey;
+    background-color: var(--mydarkgrey);
     text-decoration: none;
-    color: black !important;
+    color: white !important;
 }
 
 a:visited {
@@ -34,18 +47,18 @@ a:visited {
     background-color: black;
     font-family: 'Apple II', sans-serif !important;
     font-size: 18px;
-    color: #1fa11f;
+    color: var(--mygreen);
     /*width:95%;*/
     border: none;
     text-align: left;
     /*outline: none;*/
 
-    transition: 0.4s;
+    /*transition: 0.4s;*/
 }
 
 .accordion:hover {
-    background-color: lightgrey;
-    color: black;
+    background-color: var(--mydarkgrey);
+    color: white;
 }
 
 .panel {
