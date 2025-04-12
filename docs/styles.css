@@ -1,14 +1,13 @@
-
 @font-face {
     font-family: 'Funnel Sans';
     src: url('fonts/Funnel_Sans/FunnelSans-VariableFont_wght.ttf') format('truetype');
 }
 
 :root {
---bg-color: #111;
---text-color: #eee;
---font: 'Funnel Sans';
---glow-color: #00fff7
+    --bg-color: #111;
+    --text-color: #eee;
+    --font: 'Funnel Sans';
+    --glow-color: #00fff7
 }
 
 body {
@@ -85,40 +84,37 @@ p a:hover {
     }
 }
 
+
+
 .blog-list {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-      padding-top: 1rem;
-    }
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
+}
 
-    .blog-link {
-      position: relative;
-      color: #eee;
-      text-decoration: none;
-      font-size: 1.2rem;
-      padding-bottom: 0.25rem;
-    }
+.blog-link {
+  display: block;
+  padding: 1rem 0.5rem;
+  border-radius: 0.25rem;
+  background-color: transparent;
+  color: #eee;
+  text-decoration: none;
+  font-size: 1.2rem;
+  transition: background 0.1s ease;
+}
 
-    .blog-link .date {
-      display: block;
-      font-size: 0.85rem;
-      color: #777;
-      margin-top: 0.25rem;
-    }
 
-    .blog-link::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      height: 2px;
-      width: 100%;
-      background-color: var(--glow-color, #00f0ff);
-      box-shadow: 0 0 8px var(--glow-color, #00f0ff);
-      opacity: 0;
-    }
 
-    .blog-link:hover::after {
-      opacity: 1;
-    }
+.blog-link:hover {
+    color: var(--glow-color);
+    transition: color 0.2s;
+}
+
+
+.blog-link .date {
+  display: block;
+  font-size: 0.85rem;
+  color: #777;
+  margin-top: 0.25rem;
+}
