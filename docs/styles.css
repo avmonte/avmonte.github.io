@@ -52,7 +52,7 @@ p {
 
 p a {
     color: var(--text-color);
-    text-decoration: underline;
+    text-decoration: none;
     text-underline-offset: 3px; /* Adjust the distance between the text and the underline */
     text-decoration-thickness: 1px; /* Adjust the thickness as needed */
     transition: color 0.2s
