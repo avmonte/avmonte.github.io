@@ -4,12 +4,18 @@
     src: url('fonts/Funnel_Sans/FunnelSans-VariableFont_wght.ttf') format('truetype');
 }
 
+:root {
+--bg-color: #111;
+--text-color: #eee;
+--font: 'Funnel Sans';
+--glow-color: #00fff7
+}
 
 body {
     margin: 0;
-    font-family: 'Funnel Sans', sans-serif;
-    background: #111;
-    color: #eee
+    font-family: var(--font), sans-serif;
+    background: var(--bg-color);
+    color: var(--text-color);
 }
 
 nav {
@@ -39,20 +45,25 @@ nav a:hover {
     padding: 0 2rem
 }
 
-h1 {
-    font-size: 2rem;
-    margin: 0 0 1rem
-}
-
 p {
     font-size: 18px;
     line-height: 1.5;
     margin: 0
 }
 
-:root {
---glow-color: #bf00ff;
+p a {
+    color: var(--text-color);
+    text-decoration: underline;
+    text-underline-offset: 3px; /* Adjust the distance between the text and the underline */
+    text-decoration-thickness: 1px; /* Adjust the thickness as needed */
+    transition: color 0.2s
 }
+
+p a:hover {
+    color: var(--glow-color);
+    text-decoration: none
+}
+
 
 .neon-stripe {
     position: fixed;

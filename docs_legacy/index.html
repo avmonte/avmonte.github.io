@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+
+<html lang="en">
+    <head>
+        <title>avmonte</title>
+        <link rel="stylesheet" href="css/styles.css">
+    </head>
+    <body>
+        avmonte greets you!
+        <br>
+        <br>
+
+        <h3>Fields of interest</h3>
+        <div>
+            <p>
+                SECURITY: cryptography, cybersecurity
+            </p>
+            <p>
+                COMPUTER ENGINEERING: robotics, computer architecture
+
+            </p>
+
+            <p>
+                PROCESSING: computer vision, speech recognition, deep learning
+            </p>
+        </div>
+        <br>
+                    {#TOPICS                #}
+
+        <h3>Recent Projects</h3>
+        <button class="accordion">SAFER+ encryption</button>
+        <div class="panel">
+            <p>
+                A modified version of original SAFER block cipher developed by James Massey at ETH Zurich. It was nominated for the AES process.
+            </p>
+            <a href="https://github.com/avmonte/saferpls">Source</a>
+        </div>
+        <br>
+        <br>
+        <button class="accordion">Image Processing exercises</button>
+        <div class="panel">
+            <p>
+                Convolution-based algorithms, including gaussian blur.
+            </p>
+            <a href="https://github.com/avmonte/imageproc">Source</a>
+        </div>
+        <br>
+        <br>
+        <button class="accordion">Forth Compiler</button>
+        <div class="panel">
+            <p>
+                A simple forth compiler.
+            </p>
+            <a href="https://github.com/avmonte/forthcompilerpy">Source</a>
+        </div>
+        <br>
+        <br>
+
+
+        <h3>Contact me</h3>
+        <a href="mailto:unstoppablehay@gmail.com">unstoppable + hay at google mail</a>
+        <br>
+        <script>
+            var acc = document.getElementsByClassName("accordion");
+            var i;
+
+            for (i = 0; i < acc.length; i++) {
+              acc[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var panel = this.nextElementSibling;
+                if (panel.style.display === "block") {
+                  panel.style.display = "none";
+                } else {
+                  panel.style.display = "block";
+                }
+              });
+            }
+
+        </script>
+    </body>
+</html>
