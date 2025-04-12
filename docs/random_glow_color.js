@@ -1,8 +1,19 @@
+function hslToHex(h, s, l) {
+  s /= 100;
+  l /= 100;
 
-// Generate a cryptographically secure random 24-bit number
-const randomArray = new Uint32Array(1);
-crypto.getRandomValues(randomArray);
-const randomColor = (randomArray[0] % 0xFFFFFF).toString(16).padStart(6, '0');
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n =>
+    Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))));
 
-// Set the CSS variable dynamically
-document.documentElement.style.setProperty('--glow-color', `#${randomColor}`);
+  return `#${[f(0), f(8), f(4)].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+}
+
+// Bright color range: vibrant hue, 90–100% saturation, 60–75% lightness
+const hue = Math.floor(Math.random() * 360);
+const saturation = 95;
+const lightness = 70;
+
+const brightHex = hslToHex(hue, saturation, lightness);
+document.documentElement.style.setProperty('--glow-color', brightHex);
