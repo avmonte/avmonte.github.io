@@ -14,13 +14,13 @@ def convert_markdown_to_html(md_path, html_path):
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <title>Blog</title>
-        <link rel="stylesheet" href="../docs/styles.css"/>
+        <link rel="stylesheet" href="styles.css"/>
     </head>
     <body>
     <nav>
-        <a href="../docs/index.html">Home</a>
-        <a href="../docs/blog.html">Blog</a>
-        <a href="../docs/contact.html">Contact</a>
+        <a href="index.html">Home</a>
+        <a href="blog.html">Blog</a>
+        <a href="contact.html">Contact</a>
     </nav>
     
     <div class="container">
@@ -30,14 +30,14 @@ def convert_markdown_to_html(md_path, html_path):
             <br/>
             <br/>
             <p>
-                <a href="../docs/blog.html">[back]</a>
+                <a href="blog.html">[back]</a>
             </p>
     
         </div>
     </div>
     
     <div class="neon-stripe"></div>
-    <script src="../docs/random_glow_color.js"></script>
+    <script src="random_glow_color.js"></script>
     </body>
     </html>
     """
