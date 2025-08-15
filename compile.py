@@ -50,10 +50,9 @@ def convert_markdown_to_html(md_path, html_path):
 if __name__ == "__main__":
     posts_dir = Path("posts/")
     output_dir = Path("docs")
-    output_dir.mkdir(exist_ok=True)
-    print("Generating HTML files from Markdown...")
+    output_dir_list = [f.name for f in output_dir.glob("*.html")]
 
     for md_file in posts_dir.glob("*.md"):
-        if f"{md_file.name}.html" not in output_dir.iterdir():
+        if f"{md_file.stem}.html" not in output_dir_list:
             html_file = output_dir / (md_file.stem + ".html")
             convert_markdown_to_html(md_file, html_file)
