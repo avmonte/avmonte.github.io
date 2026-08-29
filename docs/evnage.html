@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Yerevan Building Age Map</title>
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #111; }
+    #map { width: 100vw; height: 100vh; }
+
+    #loader {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #fff; z-index: 999; gap: 14px;
+    }
+    #loader p { font-size: 13px; opacity: 0.6; }
+    .spinner {
+      width: 38px; height: 38px; border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #legend {
+      position: fixed; bottom: 20px; left: 14px;
+      background: rgba(15,15,15,0.92); color: #ddd;
+      border-radius: 10px; padding: 14px 16px; z-index: 10;
+      min-width: 190px; backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    #legend h3 {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em;
+      margin-bottom: 12px; opacity: 0.5;
+    }
+    .legend-gradient {
+      height: 12px; border-radius: 3px;
+      background: linear-gradient(to right,
+        #bf00ff 0%, #0066ff 50%, #ffe600 100%);
+    }
+    .legend-labels {
+      display: flex; justify-content: space-between;
+      font-size: 10px; opacity: 0.55; margin-top: 4px;
+    }
+    .legend-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 12px 0; }
+    .legend-row { display: flex; align-items: center; gap: 9px; margin: 6px 0; font-size: 12px; }
+    .swatch {
+      width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0;
+    }
+    .swatch-known     { background: #ffe600; box-shadow: 0 0 6px #ffe600; }
+    .swatch-suggested { background: #ffaa00; box-shadow: 0 0 6px #ffaa00; }
+    .swatch-inferred  { background: #ffe600; }
+    .swatch-unknown   { background: #222; border: 1px solid #444; }
+    .swatch-line      { width: 14px; height: 2px; border-radius: 1px; background: #999; flex-shrink: 0; }
+
+    /* ── popup ── */
+    .maplibregl-popup-content {
+      background: rgba(4,4,4,0.95);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 13px 15px;
+      color: #eee;
+      font-size: 12px;
+      min-width: 170px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      backdrop-filter: blur(10px);
+    }
+    .maplibregl-popup-tip { display: none; }
+    .maplibregl-popup { pointer-events: all; }
+
+    .p-year { font-size: 26px; font-weight: 700; line-height: 1.1; margin-bottom: 2px; }
+    .p-year.no-data { color: #444; }
+    .p-conf { font-size: 10px; margin-bottom: 8px; letter-spacing: 0.03em; }
+    .p-conf.known     { color: #39ff14; }
+    .p-conf.inferred  { color: #00f7ff; }
+    .p-conf.suggested { color: #ffaa00; }
+    .p-conf.none      { color: #444; }
+    .p-infer { font-size: 10px; color: #666; margin-bottom: 6px; }
+    .p-name  { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: #fff; }
+    .p-addr  { font-size: 11px; color: #777; margin-bottom: 4px; }
+    .p-gmaps {
+      display: inline-block; margin-top: 9px; padding-top: 9px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      font-size: 11px; color: #0066ff; text-decoration: none; width: 100%;
+    }
+    .p-gmaps:hover { color: #00f7ff; }
+
+    #stats {
+      position: fixed; top: 14px; right: 14px;
+      background: rgba(15,15,15,0.88); color: #ccc;
+      border-radius: 8px; padding: 10px 14px; font-size: 11px;
+      z-index: 10; backdrop-filter: blur(6px); line-height: 1.7;
+      border: 1px solid rgba(255,255,255,0.07);
+      display: none;
+    }
+    #stats .stat-label { opacity: 0.5; }
+    #stats .stat-known     { color: #f46d43; }
+    #stats .stat-suggested { color: #ffaa00; }
+    #stats .stat-inferred  { color: #f46d43; opacity: 0.7; }
+    #stats .stat-unknown   { color: #888; }
+    #stats .stat-bridge    { color: #ccc; }
+  </style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="spinner"></div>
+  <strong>Loading building data…</strong>
+  <p>Parsing 100k+ Yerevan buildings</p>
+</div>
+
+<div id="map"></div>
+
+<div id="legend">
+  <h3>Construction year</h3>
+  <div class="legend-gradient"></div>
+  <div class="legend-labels"><span>≤1900</span><span>1960</span><span>2020+</span></div>
+  <hr class="legend-divider">
+  <div class="legend-row"><div class="swatch swatch-known"></div>Known (OSM tag)</div>
+  <div class="legend-row"><div class="swatch swatch-suggested"></div>Suggested (curated)</div>
+  <div class="legend-row"><div class="swatch swatch-inferred"></div>Inferred (material / levels)</div>
+  <div class="legend-row"><div class="swatch swatch-unknown"></div>No data</div>
+  <hr class="legend-divider">
+  <div class="legend-row"><div class="swatch-line"></div>Bridges (same coloring, as a line)</div>
+</div>
+
+<div id="stats">
+  <div><span class="stat-label">Known year  </span> <span class="stat-known" id="s-known">–</span></div>
+  <div><span class="stat-label">Suggested   </span> <span class="stat-suggested" id="s-suggested">–</span></div>
+  <div><span class="stat-label">Inferred era </span> <span class="stat-inferred" id="s-inferred">–</span></div>
+  <div><span class="stat-label">No data      </span> <span class="stat-unknown" id="s-unknown">–</span></div>
+  <div><span class="stat-label">Bridges      </span> <span class="stat-bridge" id="s-bridges">–</span></div>
+</div>
+
+<script>
+  // read-only viewer — same rendering as the editable map, minus the
+  // suggest-a-year popup form and the /suggest network calls it needs.
+  // See index.html (local, editable) if you want to curate years instead.
+
+  // year to use for coloring: exact year if known, else estimated midpoint
+  const YEAR_EXPR = ['coalesce', ['get', 'year_built'], ['get', 'year_est']];
+
+  const COLOR_STOPS = [
+    1900, '#ff003c',
+    1930, '#ff6b00',
+    1960, '#ffe600',
+    1975, '#39ff14',
+    1990, '#00f7ff',
+    2005, '#0066ff',
+    2020, '#bf00ff'
+  ];
+
+  const COLOR_EXPR = [
+    'case',
+    ['!=', ['coalesce', ['get', 'year_built'], ['get', 'year_est']], null],
+    ['interpolate', ['linear'], YEAR_EXPR, ...COLOR_STOPS],
+    '#222222'
+  ];
+
+  // known and estimated years render identically — the popup's ~ prefix and
+  // confidence badge are what signal an estimate, not a dimmer building
+  const OPACITY_EXPR = [
+    'case',
+    ['!=', ['coalesce', ['get', 'year_built'], ['get', 'year_est']], null], 0.88,
+    0.15
+  ];
+
+  const map = new maplibregl.Map({
+    container: 'map',
+    style: {
+      version: 8,
+      sources: {},
+      layers: [{
+        id: 'background',
+        type: 'background',
+        paint: { 'background-color': '#000000' }
+      }]
+    },
+    center: [44.5136, 40.1872],
+    zoom: 13
+  });
+
+  map.addControl(new maplibregl.NavigationControl(), 'top-left');
+
+  map.on('load', () => {
+    fetch('buildings.geojson')
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status} loading buildings.geojson`);
+        return r.json();
+      })
+      .then(geojson => {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('stats').style.display = 'block';
+
+        // bridges share this same source/feature list as LineString geometry —
+        // same year coloring as buildings
+        const isBridge = f => f.geometry.type === 'LineString';
+
+        const fmt = n => n.toLocaleString();
+        const props = geojson.features.map(f => f.properties);
+        const known     = props.filter(p => p.confidence === 'known').length;
+        const suggested = props.filter(p => p.confidence === 'suggested').length;
+        const inferred  = props.filter(p => p.confidence === 'medium' || p.confidence === 'low').length;
+        const unknown   = props.length - known - suggested - inferred;
+        const bridges   = geojson.features.filter(isBridge).length;
+
+        document.getElementById('s-known').textContent     = fmt(known);
+        document.getElementById('s-suggested').textContent = fmt(suggested);
+        document.getElementById('s-inferred').textContent  = fmt(inferred);
+        document.getElementById('s-unknown').textContent   = fmt(unknown);
+        document.getElementById('s-bridges').textContent   = fmt(bridges);
+
+        map.addSource('buildings', {
+          type: 'geojson',
+          data: geojson,
+          generateId: true
+        });
+
+        map.addLayer({
+          id: 'buildings-fill',
+          type: 'fill',
+          source: 'buildings',
+          paint: {
+            'fill-color': COLOR_EXPR,
+            'fill-opacity': OPACITY_EXPR
+          }
+        });
+
+        // wide blurred line = glow halo
+        map.addLayer({
+          id: 'buildings-glow',
+          type: 'line',
+          source: 'buildings',
+          paint: {
+            'line-color': COLOR_EXPR,
+            'line-width': 4,
+            'line-blur': 6,
+            'line-opacity': [
+              'case',
+              ['!=', ['coalesce', ['get', 'year_built'], ['get', 'year_est']], null], 0.35,
+              0
+            ]
+          }
+        });
+
+        // tight bright edge
+        map.addLayer({
+          id: 'buildings-edge',
+          type: 'line',
+          source: 'buildings',
+          paint: {
+            'line-color': COLOR_EXPR,
+            'line-width': 0.8,
+            'line-opacity': [
+              'case',
+              ['!=', ['coalesce', ['get', 'year_built'], ['get', 'year_est']], null], 0.95,
+              0.12
+            ]
+          }
+        });
+
+        // hover border — wide blurred white glow
+        map.addLayer({
+          id: 'buildings-hover-glow',
+          type: 'line',
+          source: 'buildings',
+          paint: {
+            'line-color': '#ffffff',
+            'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 6, 0],
+            'line-blur':  4,
+            'line-opacity': 0.45
+          }
+        });
+
+        // hover border — sharp bright edge
+        map.addLayer({
+          id: 'buildings-hover-edge',
+          type: 'line',
+          source: 'buildings',
+          paint: {
+            'line-color': '#ffffff',
+            'line-width':   ['case', ['boolean', ['feature-state', 'hover'], false], 1.5, 0],
+            'line-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.9, 0]
+          }
+        });
+
+        // ── popup (view-only — no suggest-a-year form) ──────────────────────────
+        function popupHTML(p, lngLat) {
+          const isApproxSuggestion = p.confidence === 'suggested' &&
+            (p.year_built === null || p.year_built === undefined);
+
+          let yearHTML, confHTML;
+          if (p.confidence === 'suggested' && isApproxSuggestion) {
+            yearHTML = `<div class="p-year" style="color:inherit">~${p.year_est}</div>`;
+            confHTML = `<div class="p-conf suggested">✎ Manually confirmed · approx</div>`;
+          } else if (p.confidence === 'suggested') {
+            yearHTML = `<div class="p-year">${p.year_built}</div>`;
+            confHTML = `<div class="p-conf suggested">✎ Manually confirmed</div>`;
+          } else if (p.year_built !== null && p.year_built !== undefined) {
+            yearHTML = `<div class="p-year">${p.year_built}</div>`;
+            confHTML = `<div class="p-conf known">✓ Confirmed (${p.year_tag || 'OSM'})</div>`;
+          } else if (p.year_est !== null && p.year_est !== undefined) {
+            const range = (p.year_min && p.year_max) ? `${p.year_min}–${p.year_max}` : `~${p.year_est}`;
+            confHTML = `<div class="p-conf inferred">≈ Inferred · ${range}</div>`;
+            yearHTML = `<div class="p-year" style="color:inherit">~${p.year_est}</div>`;
+          } else {
+            yearHTML = `<div class="p-year no-data">—</div>`;
+            confHTML = `<div class="p-conf none">No year data</div>`;
+          }
+
+          // what drove inference
+          const cues = [p.material, p.levels ? `${p.levels} fl.` : null].filter(Boolean);
+          const inferHTML = (p.confidence !== 'known' && p.confidence !== 'suggested' && cues.length)
+            ? `<div class="p-infer">${cues.join(' · ')}</div>` : '';
+
+          const nameHTML = p.name ? `<div class="p-name">${p.name}</div>` : '';
+          const addr     = [p.addr_street, p.addr_number].filter(Boolean).join(' ');
+          const addrHTML = addr ? `<div class="p-addr">${addr}</div>` : '';
+
+          const gmaps = `https://www.google.com/maps?q=${lngLat.lat.toFixed(6)},${lngLat.lng.toFixed(6)}`;
+
+          return `${yearHTML}${confHTML}${inferHTML}${nameHTML}${addrHTML}
+                  <a class="p-gmaps" href="${gmaps}" target="_blank">Open in Google Maps ↗</a>`;
+        }
+
+        const popup = new maplibregl.Popup({
+          closeButton: true,
+          closeOnClick: false,
+          maxWidth: '260px',
+          offset: 8
+        });
+
+        // bridges (LineString features in the same source) are already drawn
+        // by buildings-glow/buildings-edge above — a 'line' layer renders a
+        // LineString as itself, so they get the exact same year-based color
+        // and opacity as buildings automatically. They just need their own,
+        // wider hit-target for hover/click since a thin line is hard to hit
+        // and the 'fill' layer never hit-tests line geometry.
+        map.addLayer({
+          id: 'buildings-bridge-hit',
+          type: 'line',
+          source: 'buildings',
+          filter: ['==', ['geometry-type'], 'LineString'],
+          paint: { 'line-width': 10, 'line-opacity': 0 }
+        });
+
+        const INTERACTIVE_LAYERS = ['buildings-fill', 'buildings-bridge-hit'];
+
+        // hover — border only, no popup
+        let hoveredId = null;
+        function onHoverMove(e) {
+          map.getCanvas().style.cursor = 'pointer';
+          const id = e.features[0].id;
+          if (hoveredId === id) return;
+          if (hoveredId !== null)
+            map.setFeatureState({ source: 'buildings', id: hoveredId }, { hover: false });
+          hoveredId = id;
+          map.setFeatureState({ source: 'buildings', id: hoveredId }, { hover: true });
+        }
+        function onHoverLeave() {
+          map.getCanvas().style.cursor = '';
+          if (hoveredId !== null)
+            map.setFeatureState({ source: 'buildings', id: hoveredId }, { hover: false });
+          hoveredId = null;
+        }
+        function onClick(e) {
+          const feat = e.features[0];
+          popup
+            .setLngLat(e.lngLat)
+            .setHTML(popupHTML(feat.properties, e.lngLat))
+            .addTo(map);
+        }
+        for (const layerId of INTERACTIVE_LAYERS) {
+          map.on('mousemove', layerId, onHoverMove);
+          map.on('mouseleave', layerId, onHoverLeave);
+          map.on('click', layerId, onClick);
+        }
+
+        // click on empty map — close popup
+        map.on('click', e => {
+          const hits = map.queryRenderedFeatures(e.point, { layers: INTERACTIVE_LAYERS });
+          if (!hits.length) popup.remove();
+        });
+      })
+      .catch(err => {
+        document.getElementById('loader').innerHTML =
+          `<div style="color:#f88;font-size:15px">⚠ ${err.message}</div>`;
+      });
+  });
+</script>
+</body>
+</html>
