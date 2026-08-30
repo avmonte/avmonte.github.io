@@ -1,4 +1,4 @@
-// Shared map engine for index.html (editable) and evnage.html (read-only).
+// Shared map engine for index.html (editable) and view.html (read-only).
 // Both pages call initBuildingMap({ editable }) after loading maplibre-gl and
 // this file — that single flag is the only thing that differs between them:
 // the suggest-a-year popup form, its /suggest network calls, and a couple of
@@ -14,7 +14,11 @@ function initBuildingMap({ editable }) {
     1950, '#214e91',
     2020, '#d6c41d',
   ];
-  const NO_DATA_COLOR = '#2f2f2f';
+  // no-data buildings need a different grey depending on theme so they stay
+  // visible against either background — dark theme is the default
+  const NO_DATA_COLORS = { dark: '#2f2f2f', light: '#c6c6c6' };
+  const MAP_BACKGROUND = { dark: '#000000', light: '#eef0f2' };
+  let theme = 'dark';
 
   // whether a building counts as "on" for the current year filter: always
   // true with no cutoff (cutoff === null), otherwise it needs a year AND
@@ -27,7 +31,7 @@ function initBuildingMap({ editable }) {
       : ['all', ['!=', YEAR_EXPR, null], ['<=', YEAR_EXPR, cutoff]];
   }
   function colorExpr(cutoff) {
-    return ['case', yearMatchExpr(cutoff), ['interpolate', ['linear'], YEAR_EXPR, ...COLOR_STOPS], NO_DATA_COLOR];
+    return ['case', yearMatchExpr(cutoff), ['interpolate', ['linear'], YEAR_EXPR, ...COLOR_STOPS], NO_DATA_COLORS[theme]];
   }
   // known/estimated years render identically — the popup's ~ prefix and
   // confidence badge are what signal an estimate, not a dimmer building
@@ -59,6 +63,21 @@ function initBuildingMap({ editable }) {
   map.addControl(new maplibregl.NavigationControl(), 'top-left');
 
   map.on('load', () => {
+    const themeToggle = document.getElementById('theme-toggle');
+    let refreshBuildingPaint = null; // set once the buildings layers exist, below
+
+    function applyTheme() {
+      document.documentElement.dataset.theme = theme;
+      map.setPaintProperty('background', 'background-color', MAP_BACKGROUND[theme]);
+      if (refreshBuildingPaint) refreshBuildingPaint();
+    }
+
+    themeToggle.addEventListener('change', () => {
+      theme = themeToggle.checked ? 'light' : 'dark';
+      applyTheme();
+    });
+    applyTheme();
+
     fetch('buildings.geojson')
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status} — run fetch_buildings.py first`);
@@ -163,10 +182,11 @@ function initBuildingMap({ editable }) {
         // ── year filter — historical snapshot ───────────────────────────────────
         // typing a year greys out anything built after it, the same way
         // no-data buildings already render — nothing is ever hidden/removed,
-        // only recolored. An empty field goes back to normal.
+        // only recolored. An empty field goes back to normal. Recomputed on
+        // theme changes too, since the no-data color depends on the theme.
         const yearInput = document.getElementById('year-filter-input');
 
-        yearInput.addEventListener('input', () => {
+        refreshBuildingPaint = function () {
           const parsed = parseInt(yearInput.value, 10);
           const cutoff = Number.isFinite(parsed) ? parsed : null;
 
@@ -176,7 +196,8 @@ function initBuildingMap({ editable }) {
           map.setPaintProperty('buildings-glow', 'line-opacity', glowOpacityExpr(cutoff));
           map.setPaintProperty('buildings-edge', 'line-color', colorExpr(cutoff));
           map.setPaintProperty('buildings-edge', 'line-opacity', edgeOpacityExpr(cutoff));
-        });
+        };
+        yearInput.addEventListener('input', refreshBuildingPaint);
 
         // ── popup ────────────────────────────────────────────────────────────
         function popupHTML(p, lngLat) {

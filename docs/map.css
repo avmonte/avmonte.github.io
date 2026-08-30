@@ -1,25 +1,60 @@
+:root {
+  --bg: #111;
+  --map-bg: #000000;
+  --panel-bg: rgba(15,15,15,0.92);
+  --panel-bg-soft: rgba(15,15,15,0.88);
+  --text: #ddd;
+  --text-dim: #ccc;
+  --text-faint: #888;
+  --border: rgba(255,255,255,0.07);
+  --border-strong: rgba(255,255,255,0.15);
+  --input-bg: rgba(255,255,255,0.06);
+  --placeholder: #666;
+  --popup-bg: rgba(4,4,4,0.95);
+  --popup-border: rgba(255,255,255,0.1);
+  --popup-shadow: rgba(0,0,0,0.8);
+  --loader-bg: rgba(0,0,0,0.75);
+}
+[data-theme="light"] {
+  --bg: #eef0f2;
+  --map-bg: #eef0f2;
+  --panel-bg: rgba(255,255,255,0.92);
+  --panel-bg-soft: rgba(255,255,255,0.88);
+  --text: #222;
+  --text-dim: #444;
+  --text-faint: #888;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.15);
+  --input-bg: rgba(0,0,0,0.04);
+  --placeholder: #999;
+  --popup-bg: rgba(255,255,255,0.97);
+  --popup-border: rgba(0,0,0,0.1);
+  --popup-shadow: rgba(0,0,0,0.25);
+  --loader-bg: rgba(255,255,255,0.85);
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #111; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); }
 #map { width: 100vw; height: 100vh; }
 
 #loader {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  position: fixed; inset: 0; background: var(--loader-bg);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: #fff; z-index: 999; gap: 14px;
+  color: var(--text); z-index: 999; gap: 14px;
 }
 #loader p { font-size: 13px; opacity: 0.6; }
 .spinner {
-  width: 38px; height: 38px; border: 3px solid rgba(255,255,255,0.15);
-  border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite;
+  width: 38px; height: 38px; border: 3px solid var(--border-strong);
+  border-top-color: var(--text); border-radius: 50%; animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 #legend {
   position: fixed; bottom: 20px; left: 14px;
-  background: rgba(15,15,15,0.92); color: #ddd;
+  background: var(--panel-bg); color: var(--text);
   border-radius: 10px; padding: 14px 16px; z-index: 10;
   min-width: 190px; backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
 }
 #legend h3 {
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.09em;
@@ -35,79 +70,86 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   display: flex; justify-content: space-between;
   font-size: 10px; opacity: 0.55; margin-top: 4px;
 }
-.legend-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 12px 0; }
+.legend-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
 
-.year-filter-label { display: block; font-size: 11px; color: #ccc; margin-bottom: 6px; }
+.year-filter-label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
 .year-filter-input {
-  width: 100%; background: rgba(255,255,255,0.06); color: #eee;
-  border: 1px solid rgba(255,255,255,0.15); border-radius: 5px;
+  width: 100%; background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 5px;
   padding: 5px 7px; font-size: 12px;
 }
-.year-filter-input::placeholder { color: #666; }
+.year-filter-input::placeholder { color: var(--placeholder); }
+
+.map-toggle {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px; color: var(--text-dim); cursor: pointer; user-select: none;
+}
+.map-toggle + .map-toggle { margin-top: 8px; }
+.map-toggle input { accent-color: #d6c41d; }
 
 /* ── popup ── */
 .maplibregl-popup-content {
-  background: rgba(4,4,4,0.95);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--popup-bg);
+  border: 1px solid var(--popup-border);
   border-radius: 10px;
   padding: 13px 15px;
-  color: #eee;
+  color: var(--text);
   font-size: 12px;
   min-width: 170px;
-  box-shadow: 0 0 30px rgba(0,0,0,0.8);
+  box-shadow: 0 0 30px var(--popup-shadow);
   backdrop-filter: blur(10px);
 }
 .maplibregl-popup-tip { display: none; }
 .maplibregl-popup { pointer-events: all; }
 
 .p-year { font-size: 26px; font-weight: 700; line-height: 1.1; margin-bottom: 2px; }
-.p-year.no-data { color: #444; }
+.p-year.no-data { color: var(--text-faint); }
 .p-conf { font-size: 10px; margin-bottom: 8px; letter-spacing: 0.03em; }
 .p-conf.known     { color: #39ff14; }
-.p-conf.inferred  { color: #00f7ff; }
-.p-conf.suggested { color: #ffaa00; }
-.p-conf.none      { color: #444; }
-.p-name  { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: #fff; }
-.p-addr  { font-size: 11px; color: #777; margin-bottom: 4px; }
+.p-conf.inferred  { color: #00b8cc; }
+.p-conf.suggested { color: #d68a00; }
+.p-conf.none      { color: var(--text-faint); }
+.p-name  { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: var(--text); }
+.p-addr  { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
 
 /* suggest-a-year form — only rendered when the page calls initBuildingMap({editable: true}) */
 .p-suggest {
   margin-top: 9px; padding-top: 9px;
-  border-top: 1px solid rgba(255,255,255,0.07);
+  border-top: 1px solid var(--border);
   display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
 }
 .p-suggest-input {
-  width: 66px; background: rgba(255,255,255,0.06); color: #eee;
-  border: 1px solid rgba(255,255,255,0.15); border-radius: 5px;
+  width: 66px; background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 5px;
   padding: 4px 6px; font-size: 12px;
 }
-.p-suggest-input::placeholder { color: #555; }
+.p-suggest-input::placeholder { color: var(--placeholder); }
 .p-suggest-save, .p-suggest-clear {
-  background: rgba(255,170,0,0.12); color: #ffaa00;
+  background: rgba(255,170,0,0.12); color: #d68a00;
   border: 1px solid rgba(255,170,0,0.3); border-radius: 5px;
   padding: 4px 8px; font-size: 11px; cursor: pointer;
 }
 .p-suggest-save:hover, .p-suggest-clear:hover { background: rgba(255,170,0,0.22); }
-.p-suggest-clear { background: rgba(255,255,255,0.05); color: #999; border-color: rgba(255,255,255,0.12); }
-.p-suggest-msg { flex-basis: 100%; font-size: 10px; color: #888; }
+.p-suggest-clear { background: var(--input-bg); color: var(--text-faint); border-color: var(--border-strong); }
+.p-suggest-msg { flex-basis: 100%; font-size: 10px; color: var(--text-faint); }
 .p-suggest-approx {
   display: flex; align-items: center; gap: 4px;
-  font-size: 10px; color: #999; cursor: pointer; user-select: none;
+  font-size: 10px; color: var(--text-faint); cursor: pointer; user-select: none;
 }
-.p-suggest-approx input { accent-color: #ffaa00; }
+.p-suggest-approx input { accent-color: #d68a00; }
 .p-gmaps {
   display: inline-block; margin-top: 9px; padding-top: 9px;
-  border-top: 1px solid rgba(255,255,255,0.07);
+  border-top: 1px solid var(--border);
   font-size: 11px; color: #0066ff; text-decoration: none; width: 100%;
 }
-.p-gmaps:hover { color: #00f7ff; }
+.p-gmaps:hover { color: #00a2b8; }
 
 #stats {
   position: fixed; top: 14px; right: 14px;
-  background: rgba(15,15,15,0.88); color: #ccc;
+  background: var(--panel-bg-soft); color: var(--text-dim);
   border-radius: 8px; padding: 10px 14px; font-size: 11px;
   z-index: 10; backdrop-filter: blur(6px); line-height: 1.7;
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
   display: none;
 }
 #stats .stat-label { opacity: 0.5; }
