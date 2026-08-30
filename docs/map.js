@@ -1,4 +1,4 @@
-// Shared map engine for index.html (editable) and view.html (read-only).
+// Shared map engine for index.html (editable) and evnage.html (read-only).
 // Both pages call initBuildingMap({ editable }) after loading maplibre-gl and
 // this file — that single flag is the only thing that differs between them:
 // the suggest-a-year popup form, its /suggest network calls, and a couple of
