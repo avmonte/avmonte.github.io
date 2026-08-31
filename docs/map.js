@@ -258,21 +258,29 @@ function initBuildingMap({ editable }) {
         toInput.addEventListener('input', syncFromInputs);
 
         // ── popup ────────────────────────────────────────────────────────────
+        // name/address can now come from a manual edit (see wireInfoForm below)
+        // as well as raw OSM tags, so escape before dropping either into innerHTML
+        function escapeHTML(s) {
+          return String(s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+          }[c]));
+        }
+
         function popupHTML(p, lngLat) {
           const isApproxSuggestion = p.confidence === 'suggested' &&
             (p.year_built === null || p.year_built === undefined);
-          const suggestedLabel = editable ? 'Your suggestion' : 'Manually confirmed';
+          const suggestedLabel = editable ? 'Your suggestion' : 'Confirmed';
 
           let yearHTML, confHTML;
           if (p.confidence === 'suggested' && isApproxSuggestion) {
             yearHTML = `<div class="p-year" style="color:inherit">~${p.year_est}</div>`;
-            confHTML = `<div class="p-conf suggested">✎ ${suggestedLabel} · approx</div>`;
+            confHTML = `<div class="p-conf suggested">✓ ${suggestedLabel} · approx</div>`;
           } else if (p.confidence === 'suggested') {
             yearHTML = `<div class="p-year">${p.year_built}</div>`;
-            confHTML = `<div class="p-conf suggested">✎ ${suggestedLabel}</div>`;
+            confHTML = `<div class="p-conf suggested">✓ ${suggestedLabel}</div>`;
           } else if (p.year_built !== null && p.year_built !== undefined) {
             yearHTML = `<div class="p-year">${p.year_built}</div>`;
-            confHTML = `<div class="p-conf known">✓ Confirmed (${p.year_tag || 'OSM'})</div>`;
+            confHTML = `<div class="p-conf known">✓ Confirmed</div>`;
           } else if (p.year_est !== null && p.year_est !== undefined) {
             confHTML = `<div class="p-conf inferred">≈ Inferred · ~${p.year_est}</div>`;
             yearHTML = `<div class="p-year" style="color:inherit">~${p.year_est}</div>`;
@@ -281,9 +289,9 @@ function initBuildingMap({ editable }) {
             confHTML = `<div class="p-conf none">No year data</div>`;
           }
 
-          const nameHTML = p.name ? `<div class="p-name">${p.name}</div>` : '';
+          const nameHTML = p.name ? `<div class="p-name">${escapeHTML(p.name)}</div>` : '';
           const addr     = [p.addr_street, p.addr_number].filter(Boolean).join(' ');
-          const addrHTML = addr ? `<div class="p-addr">${addr}</div>` : '';
+          const addrHTML = addr ? `<div class="p-addr">${escapeHTML(addr)}</div>` : '';
 
           const gmaps = `https://www.google.com/maps?q=${lngLat.lat.toFixed(6)},${lngLat.lng.toFixed(6)}`;
 
@@ -308,7 +316,24 @@ function initBuildingMap({ editable }) {
               </div>`;
           }
 
-          return `${yearHTML}${confHTML}${nameHTML}${addrHTML}${suggestHTML}
+          let editInfoHTML = '';
+          if (editable) {
+            editInfoHTML = `
+              <div class="p-edit-info">
+                <input class="p-edit-name" type="text" maxlength="200"
+                       placeholder="Name" value="${escapeHTML(p.name || '')}">
+                <div class="p-edit-addr-row">
+                  <input class="p-edit-street" type="text" maxlength="200"
+                         placeholder="Street" value="${escapeHTML(p.addr_street || '')}">
+                  <input class="p-edit-number" type="text" maxlength="20"
+                         placeholder="No." value="${escapeHTML(p.addr_number || '')}">
+                </div>
+                <button class="p-edit-save" type="button">Save details</button>
+                <div class="p-edit-msg"></div>
+              </div>`;
+          }
+
+          return `${yearHTML}${confHTML}${nameHTML}${addrHTML}${suggestHTML}${editInfoHTML}
                   <a class="p-gmaps" href="${gmaps}" target="_blank">Open in Google Maps ↗</a>`;
         }
 
@@ -342,6 +367,56 @@ function initBuildingMap({ editable }) {
           }
           map.getSource('buildings').setData(geojson);
           updateStats();
+        }
+
+        // POST edited name/address to the local save server. Fields left
+        // blank clear their override (fall back to the OSM tag on next
+        // fetch_buildings.py run); requires running `python server.py`.
+        async function postInfo(id, name, addrStreet, addrNumber) {
+          const res = await fetch('/suggest-info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, name, addr_street: addrStreet, addr_number: addrNumber })
+          });
+          if (!res.ok) throw new Error(`save failed (HTTP ${res.status}) — is server.py running?`);
+          return res.json();
+        }
+
+        // apply a freshly-saved name/address edit to the in-memory data so
+        // the popup and any re-render reflect it immediately, without
+        // waiting for the next fetch_buildings.py run
+        function applyInfoLocally(id, name, addrStreet, addrNumber) {
+          const feature = geojson.features.find(f => f.properties.id === id);
+          if (!feature) return;
+          feature.properties.name = name || undefined;
+          feature.properties.addr_street = addrStreet || undefined;
+          feature.properties.addr_number = addrNumber || undefined;
+          map.getSource('buildings').setData(geojson);
+        }
+
+        function wireInfoForm(feat) {
+          const el = popup.getElement();
+          if (!el) return;
+          const nameInput   = el.querySelector('.p-edit-name');
+          const streetInput = el.querySelector('.p-edit-street');
+          const numberInput = el.querySelector('.p-edit-number');
+          const saveBtn     = el.querySelector('.p-edit-save');
+          const msg         = el.querySelector('.p-edit-msg');
+          const id          = feat.properties.id;
+
+          saveBtn.addEventListener('click', async () => {
+            const name = nameInput.value.trim();
+            const addrStreet = streetInput.value.trim();
+            const addrNumber = numberInput.value.trim();
+            msg.textContent = 'Saving…';
+            try {
+              await postInfo(id, name, addrStreet, addrNumber);
+              applyInfoLocally(id, name, addrStreet, addrNumber);
+              msg.textContent = 'Saved ✓';
+            } catch (err) {
+              msg.textContent = err.message;
+            }
+          });
         }
 
         function wireSuggestForm(feat) {
@@ -417,7 +492,10 @@ function initBuildingMap({ editable }) {
             .setLngLat(e.lngLat)
             .setHTML(popupHTML(feat.properties, e.lngLat))
             .addTo(map);
-          if (editable) wireSuggestForm(feat);
+          if (editable) {
+            wireSuggestForm(feat);
+            wireInfoForm(feat);
+          }
         });
 
         // click on empty map — close popup

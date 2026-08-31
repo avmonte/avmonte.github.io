@@ -34,7 +34,12 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg); -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
 #map { width: 100vw; height: 100vh; }
 
 #loader {
@@ -50,7 +55,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 @keyframes spin { to { transform: rotate(360deg); } }
 
 #legend {
-  position: fixed; bottom: 20px; left: 14px;
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  left: calc(14px + env(safe-area-inset-left));
   background: var(--panel-bg); color: var(--text);
   border-radius: 10px; padding: 12px 13px; z-index: 10;
   width: 200px; backdrop-filter: blur(8px);
@@ -139,7 +146,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .p-conf { font-size: 10px; margin-bottom: 8px; letter-spacing: 0.03em; }
 .p-conf.known     { color: #39ff14; }
 .p-conf.inferred  { color: #00b8cc; }
-.p-conf.suggested { color: #d68a00; }
+.p-conf.suggested { color: #39ff14; }
 .p-conf.none      { color: var(--text-faint); }
 .p-name  { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: var(--text); }
 .p-addr  { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
@@ -169,6 +176,32 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   font-size: 10px; color: var(--text-faint); cursor: pointer; user-select: none;
 }
 .p-suggest-approx input { accent-color: #d68a00; }
+
+/* edit name/address form — only rendered when editable: true */
+.p-edit-info {
+  margin-top: 9px; padding-top: 9px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.p-edit-name, .p-edit-street, .p-edit-number {
+  background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 5px;
+  padding: 4px 6px; font-size: 12px; width: 100%; min-width: 0;
+}
+.p-edit-name::placeholder, .p-edit-street::placeholder, .p-edit-number::placeholder {
+  color: var(--placeholder);
+}
+.p-edit-addr-row { display: flex; gap: 6px; }
+.p-edit-street { flex: 2; }
+.p-edit-number { flex: 1; }
+.p-edit-save {
+  align-self: flex-start;
+  background: rgba(255,170,0,0.12); color: #d68a00;
+  border: 1px solid rgba(255,170,0,0.3); border-radius: 5px;
+  padding: 4px 8px; font-size: 11px; cursor: pointer;
+}
+.p-edit-save:hover { background: rgba(255,170,0,0.22); }
+.p-edit-msg { font-size: 10px; color: var(--text-faint); }
 .p-gmaps {
   display: inline-block; margin-top: 9px; padding-top: 9px;
   border-top: 1px solid var(--border);
@@ -177,7 +210,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .p-gmaps:hover { color: #00a2b8; }
 
 #stats {
-  position: fixed; top: 14px; right: 14px;
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top));
+  right: calc(14px + env(safe-area-inset-right));
   background: var(--panel-bg-soft); color: var(--text-dim);
   border-radius: 8px; padding: 10px 14px; font-size: 11px;
   z-index: 10; backdrop-filter: blur(6px); line-height: 1.7;
@@ -185,3 +220,44 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   display: none;
 }
 #stats .stat-label { opacity: 0.5; }
+
+/* ── mobile ── */
+@media (max-width: 640px) {
+  #legend {
+    width: auto;
+    left: calc(10px + env(safe-area-inset-left));
+    right: calc(10px + env(safe-area-inset-right));
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    padding: 11px 12px;
+  }
+  #stats {
+    top: calc(10px + env(safe-area-inset-top));
+    right: calc(10px + env(safe-area-inset-right));
+    padding: 7px 10px; font-size: 10px; line-height: 1.5;
+  }
+  .maplibregl-popup { max-width: min(260px, calc(100vw - 32px)) !important; }
+}
+
+/* ── touch targets — anything driven by a finger, regardless of screen size ── */
+@media (pointer: coarse) {
+  .maplibregl-ctrl-group button { width: 36px !important; height: 36px !important; }
+  .maplibregl-popup-close-button { width: 30px; height: 30px; font-size: 18px; line-height: 30px; }
+
+  .year-range-slider { height: 26px; }
+  .year-range-slider input[type="range"]::-webkit-slider-thumb {
+    width: 22px; height: 22px; margin-top: -9.5px;
+  }
+  .year-range-slider input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px;
+  }
+
+  .year-filter-input, .p-suggest-input,
+  .p-edit-name, .p-edit-street, .p-edit-number {
+    padding: 9px 10px; font-size: 16px; /* 16px avoids iOS auto-zoom-on-focus */
+  }
+  .p-suggest-save, .p-suggest-clear, .p-edit-save {
+    padding: 9px 13px; font-size: 13px;
+  }
+  .map-toggle input { width: 18px; height: 18px; }
+  .p-suggest-approx input { width: 16px; height: 16px; }
+}
