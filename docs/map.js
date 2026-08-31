@@ -80,6 +80,16 @@ function initBuildingMap({ editable }) {
     });
     applyTheme();
 
+    // mobile-only retractable legend (see the max-width: 640px rules in
+    // map.css) — the toggle button is hidden entirely on wider screens, so
+    // this listener is harmless there too
+    const legend = document.getElementById('legend');
+    const legendToggle = document.getElementById('legend-toggle');
+    legendToggle.addEventListener('click', () => {
+      const expanded = legend.classList.toggle('legend-expanded');
+      legendToggle.setAttribute('aria-expanded', String(expanded));
+    });
+
     fetch('buildings.geojson')
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status} — run fetch_buildings.py first`);

@@ -19,28 +19,36 @@
 <div id="map"></div>
 
 <div id="legend">
-  <h3>Construction year</h3>
+  <div class="legend-header">
+    <h3>Construction year</h3>
+    <button id="legend-toggle" class="legend-toggle" type="button"
+            aria-expanded="false" aria-controls="legend-extra" aria-label="Toggle legend details">
+      <span class="legend-toggle-chevron">⌃</span>
+    </button>
+  </div>
   <div class="legend-gradient"></div>
   <div class="legend-labels"><span>≤1900</span><span>1960</span><span>2020+</span></div>
 
-  <hr class="legend-divider">
+  <div id="legend-extra">
+    <hr class="legend-divider">
 
-  <label class="year-filter-label">Show buildings between years</label>
-  <div class="year-filter-row">
-    <input type="number" id="year-filter-from" class="year-filter-input" placeholder="from">
-    <span class="year-filter-sep">–</span>
-    <input type="number" id="year-filter-to" class="year-filter-input" placeholder="to">
+    <label class="year-filter-label">Show buildings between years</label>
+    <div class="year-filter-row">
+      <input type="number" id="year-filter-from" class="year-filter-input" placeholder="from">
+      <span class="year-filter-sep">–</span>
+      <input type="number" id="year-filter-to" class="year-filter-input" placeholder="to">
+    </div>
+    <div class="year-range-slider">
+      <div class="year-range-track"></div>
+      <div class="year-range-fill" id="year-range-fill"></div>
+      <input type="range" id="year-range-min">
+      <input type="range" id="year-range-max">
+    </div>
+
+    <hr class="legend-divider">
+
+    <label class="map-toggle"><input type="checkbox" id="theme-toggle"> Light mode</label>
   </div>
-  <div class="year-range-slider">
-    <div class="year-range-track"></div>
-    <div class="year-range-fill" id="year-range-fill"></div>
-    <input type="range" id="year-range-min">
-    <input type="range" id="year-range-max">
-  </div>
-
-  <hr class="legend-divider">
-
-  <label class="map-toggle"><input type="checkbox" id="theme-toggle"> Light mode</label>
 </div>
 
 <div id="stats">
