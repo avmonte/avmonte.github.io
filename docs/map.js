@@ -21,28 +21,30 @@ function initBuildingMap({ editable }) {
   let theme = 'dark';
 
   // whether a building counts as "on" for the current year filter: always
-  // true with no cutoff (cutoff === null), otherwise it needs a year AND
-  // that year must be <= cutoff. Buildings that don't match are never
-  // hidden — they're just recolored/dimmed exactly like no-data buildings
-  // already are, via the same expressions below.
-  function yearMatchExpr(cutoff) {
-    return cutoff === null
-      ? ['!=', YEAR_EXPR, null]
-      : ['all', ['!=', YEAR_EXPR, null], ['<=', YEAR_EXPR, cutoff]];
+  // true with no bounds (fromYear/toYear both null), otherwise it needs a
+  // year AND that year must fall within [fromYear, toYear] (either bound can
+  // be omitted independently). Buildings that don't match are never hidden —
+  // they're just recolored/dimmed exactly like no-data buildings already
+  // are, via the same expressions below.
+  function yearMatchExpr(fromYear, toYear) {
+    const clauses = [['!=', YEAR_EXPR, null]];
+    if (fromYear !== null) clauses.push(['>=', YEAR_EXPR, fromYear]);
+    if (toYear !== null) clauses.push(['<=', YEAR_EXPR, toYear]);
+    return clauses.length === 1 ? clauses[0] : ['all', ...clauses];
   }
-  function colorExpr(cutoff) {
-    return ['case', yearMatchExpr(cutoff), ['interpolate', ['linear'], YEAR_EXPR, ...COLOR_STOPS], NO_DATA_COLORS[theme]];
+  function colorExpr(fromYear, toYear) {
+    return ['case', yearMatchExpr(fromYear, toYear), ['interpolate', ['linear'], YEAR_EXPR, ...COLOR_STOPS], NO_DATA_COLORS[theme]];
   }
   // known/estimated years render identically — the popup's ~ prefix and
   // confidence badge are what signal an estimate, not a dimmer building
-  function fillOpacityExpr(cutoff) {
-    return ['case', yearMatchExpr(cutoff), 0.88, 0.15];
+  function fillOpacityExpr(fromYear, toYear) {
+    return ['case', yearMatchExpr(fromYear, toYear), 0.88, 0.15];
   }
-  function glowOpacityExpr(cutoff) {
-    return ['case', yearMatchExpr(cutoff), 0.35, 0];
+  function glowOpacityExpr(fromYear, toYear) {
+    return ['case', yearMatchExpr(fromYear, toYear), 0.35, 0];
   }
-  function edgeOpacityExpr(cutoff) {
-    return ['case', yearMatchExpr(cutoff), 0.95, 0.12];
+  function edgeOpacityExpr(fromYear, toYear) {
+    return ['case', yearMatchExpr(fromYear, toYear), 0.95, 0.12];
   }
 
   const map = new maplibregl.Map({
@@ -124,8 +126,8 @@ function initBuildingMap({ editable }) {
           type: 'fill',
           source: 'buildings',
           paint: {
-            'fill-color': colorExpr(null),
-            'fill-opacity': fillOpacityExpr(null)
+            'fill-color': colorExpr(null, null),
+            'fill-opacity': fillOpacityExpr(null, null)
           }
         });
 
@@ -135,10 +137,10 @@ function initBuildingMap({ editable }) {
           type: 'line',
           source: 'buildings',
           paint: {
-            'line-color': colorExpr(null),
+            'line-color': colorExpr(null, null),
             'line-width': 4,
             'line-blur': 6,
-            'line-opacity': glowOpacityExpr(null)
+            'line-opacity': glowOpacityExpr(null, null)
           }
         });
 
@@ -148,9 +150,9 @@ function initBuildingMap({ editable }) {
           type: 'line',
           source: 'buildings',
           paint: {
-            'line-color': colorExpr(null),
+            'line-color': colorExpr(null, null),
             'line-width': 0.8,
-            'line-opacity': edgeOpacityExpr(null)
+            'line-opacity': edgeOpacityExpr(null, null)
           }
         });
 
@@ -180,24 +182,80 @@ function initBuildingMap({ editable }) {
         });
 
         // ── year filter — historical snapshot ───────────────────────────────────
-        // typing a year greys out anything built after it, the same way
-        // no-data buildings already render — nothing is ever hidden/removed,
-        // only recolored. An empty field goes back to normal. Recomputed on
-        // theme changes too, since the no-data color depends on the theme.
-        const yearInput = document.getElementById('year-filter-input');
+        // a two-sided range: buildings outside [from, to] grey out the same
+        // way no-data buildings already render — nothing is ever hidden,
+        // only recolored. Either bound can be left blank. Two number fields
+        // and a dual-handle slider (two overlaid native <input type=range>,
+        // see map.css) both drive the same state and stay in sync, so people
+        // who'd rather type a year than drag a handle can just do that.
+        const fromInput = document.getElementById('year-filter-from');
+        const toInput = document.getElementById('year-filter-to');
+        const rangeMin = document.getElementById('year-range-min');
+        const rangeMax = document.getElementById('year-range-max');
+        const rangeFill = document.getElementById('year-range-fill');
+
+        const dataYears = geojson.features
+          .map(f => f.properties.year_built ?? f.properties.year_est)
+          .filter(y => y !== null && y !== undefined);
+        const dataMinYear = dataYears.length ? Math.min(...dataYears) : 1800;
+        const dataMaxYear = dataYears.length ? Math.max(...dataYears) : new Date().getFullYear();
+
+        rangeMin.min = rangeMax.min = dataMinYear;
+        rangeMin.max = rangeMax.max = dataMaxYear;
+        rangeMin.value = dataMinYear;
+        rangeMax.value = dataMaxYear;
+        fromInput.placeholder = `${dataMinYear}`;
+        toInput.placeholder = `${dataMaxYear}`;
+
+        function parseYearOr(input, fallback) {
+          const v = parseInt(input.value, 10);
+          return Number.isFinite(v) ? Math.max(dataMinYear, Math.min(v, dataMaxYear)) : fallback;
+        }
+
+        function updateRangeFill() {
+          const span = dataMaxYear - dataMinYear || 1;
+          const lo = Math.min(+rangeMin.value, +rangeMax.value);
+          const hi = Math.max(+rangeMin.value, +rangeMax.value);
+          rangeFill.style.left = `${((lo - dataMinYear) / span) * 100}%`;
+          rangeFill.style.width = `${((hi - lo) / span) * 100}%`;
+        }
+        updateRangeFill();
 
         refreshBuildingPaint = function () {
-          const parsed = parseInt(yearInput.value, 10);
-          const cutoff = Number.isFinite(parsed) ? parsed : null;
+          const fromYear = parseYearOr(fromInput, null);
+          const toYear = parseYearOr(toInput, null);
 
-          map.setPaintProperty('buildings-fill', 'fill-color', colorExpr(cutoff));
-          map.setPaintProperty('buildings-fill', 'fill-opacity', fillOpacityExpr(cutoff));
-          map.setPaintProperty('buildings-glow', 'line-color', colorExpr(cutoff));
-          map.setPaintProperty('buildings-glow', 'line-opacity', glowOpacityExpr(cutoff));
-          map.setPaintProperty('buildings-edge', 'line-color', colorExpr(cutoff));
-          map.setPaintProperty('buildings-edge', 'line-opacity', edgeOpacityExpr(cutoff));
+          map.setPaintProperty('buildings-fill', 'fill-color', colorExpr(fromYear, toYear));
+          map.setPaintProperty('buildings-fill', 'fill-opacity', fillOpacityExpr(fromYear, toYear));
+          map.setPaintProperty('buildings-glow', 'line-color', colorExpr(fromYear, toYear));
+          map.setPaintProperty('buildings-glow', 'line-opacity', glowOpacityExpr(fromYear, toYear));
+          map.setPaintProperty('buildings-edge', 'line-color', colorExpr(fromYear, toYear));
+          map.setPaintProperty('buildings-edge', 'line-opacity', edgeOpacityExpr(fromYear, toYear));
         };
-        yearInput.addEventListener('input', refreshBuildingPaint);
+
+        function syncFromSliders() {
+          fromInput.value = rangeMin.value;
+          toInput.value = rangeMax.value;
+          updateRangeFill();
+          refreshBuildingPaint();
+        }
+        function syncFromInputs() {
+          rangeMin.value = parseYearOr(fromInput, dataMinYear);
+          rangeMax.value = parseYearOr(toInput, dataMaxYear);
+          updateRangeFill();
+          refreshBuildingPaint();
+        }
+
+        rangeMin.addEventListener('input', () => {
+          if (+rangeMin.value > +rangeMax.value) rangeMin.value = rangeMax.value;
+          syncFromSliders();
+        });
+        rangeMax.addEventListener('input', () => {
+          if (+rangeMax.value < +rangeMin.value) rangeMax.value = rangeMin.value;
+          syncFromSliders();
+        });
+        fromInput.addEventListener('input', syncFromInputs);
+        toInput.addEventListener('input', syncFromInputs);
 
         // ── popup ────────────────────────────────────────────────────────────
         function popupHTML(p, lngLat) {
@@ -239,7 +297,7 @@ function initBuildingMap({ editable }) {
               ? `<button class="p-suggest-clear" type="button">Clear</button>` : '';
             suggestHTML = `
               <div class="p-suggest">
-                <input class="p-suggest-input" type="number" min="1500" max="2030"
+                <input class="p-suggest-input" type="number" min="1" max="2030"
                        placeholder="year" value="${prefill}">
                 <label class="p-suggest-approx">
                   <input type="checkbox" class="p-suggest-approx-cb" ${approxChecked}> ~ approx
@@ -298,8 +356,8 @@ function initBuildingMap({ editable }) {
 
           saveBtn.addEventListener('click', async () => {
             const year = parseInt(input.value, 10);
-            if (!year || year < 1500 || year > 2030) {
-              msg.textContent = 'Enter a year between 1500–2030';
+            if (!year || year < 1 || year > 2030) {
+              msg.textContent = 'Enter a year between 1–2030';
               return;
             }
             const approx = approxCb.checked;
