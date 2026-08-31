@@ -118,8 +118,7 @@ function initBuildingMap({ editable }) {
           const inferred  = props.filter(p => p.confidence === 'inferred').length;
           const unknown   = props.length - known - suggested - inferred;
 
-          document.getElementById('s-known').textContent     = fmt(known);
-          document.getElementById('s-suggested').textContent = fmt(suggested);
+          document.getElementById('s-confirmed').textContent = fmt(known + suggested);
           document.getElementById('s-inferred').textContent  = fmt(inferred);
           document.getElementById('s-unknown').textContent   = fmt(unknown);
         }
